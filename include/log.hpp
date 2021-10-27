@@ -51,7 +51,7 @@ namespace log {
 
 	inline std::map<log::type, bool> output_level {
 		{ static_cast<log::type>(0), true },
-		{ static_cast<log::type>(0), true },
+		{ static_cast<log::type>(1), true },
 	};
 
 	struct entry {
@@ -75,6 +75,7 @@ namespace log {
 
 		const std::list<log::entry> filtered(void);
 		const int lastIndexOf(const log::type type, const std::string msg);
+		const bool typeShouldEcho(const log::type type, const bool screenOnly = false);
 		void process_entry(const log::type type, const std::string msg, const log::endl_type endl);
 	}
 

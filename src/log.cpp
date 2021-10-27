@@ -34,6 +34,16 @@ const int log::_private::lastIndexOf(const log::type type, const std::string msg
 		( common::to_lower(msg) == common::to_lower(idx -> msg) ? std::distance(idx, log::_private::store.rend()) : 0);
 }
 
+const bool log::_private::typeShouldEcho(const log::type type, const bool screenOnly) {
+
+	if ( type == static_cast<log::type>(1) && // error type
+		log::error_stream != nullptr ) return true;
+	else if ( log::output_stream != nullptr || (
+		!screenOnly && log::file_stream != nullptr ))
+		return true;
+	else return false;
+}
+
 void log::_private::process_entry(const log::type type, const std::string msg, const log::endl_type endl) {
 
 	log::entry _last = log::_private::store.size() > 0 ?
@@ -72,30 +82,32 @@ void log::_private::process_entry(const log::type type, const std::string msg, c
 	while ( log::_private::store.size() >= EVENT_LOG_MAX_SIZE + 1 )
 		log::_private::store.pop_front();
 
-	if (( log::output_stream != nullptr || log::file_stream != nullptr ) &&
+	if ( log::_private::typeShouldEcho(type) &&
 		log::output_level[_entry.type]) {
 		bool equals = _entry.equals(_last_filtered);
 		if ( !equals || ( equals && log::_private::_last_msg != _dup_msg_str )) {
 
 			std::string _msg = equals ? _dup_msg_str : _entry.msg;
-			if ( log::output_stream != nullptr ) {
-				if ( type == log::type::error )
-					*log::error_stream << _msg << std::endl;
-				else
-					*log::output_stream << _msg << std::endl;
-			} if ( log::file_stream != nullptr )
+			if ( type != static_cast<log::type>(1) &&
+				log::output_stream != nullptr)
+				*log::output_stream << _msg << std::endl;
+			 else if ( type == static_cast<log::type>(1) &&
+				log::error_stream != nullptr )
+				*log::error_stream << _msg << std::endl;
+
+			if ( log::file_stream != nullptr )
 				*log::file_stream << "[" << _entry.type << "] " << _msg << std::endl;
 
 			log::_private::_last_msg = _msg;
 		}
 	}
 
-	if ( _last2_idx ) {
-		auto it = log::_private::store.begin();
-		if ( _last2_idx > 1 )
-			std::advance(it, _last2_idx - 1);
-		it -> count++;
-	} else log::_private::store.push_back(_entry);
+	if ( !_last2_idx )
+		log::_private::store.push_back(_entry);
+	else if ( auto it = _last2_idx > 1 ?
+			std::next(log::_private::store.begin(), _last2_idx - 1) :
+			log::_private::store.begin();
+		it != log::_private::store.end()) it -> count++;
 }
 
 const std::vector<log::entry> log::last(int count, const log::type type) {
