@@ -1,7 +1,8 @@
 # logcpp
-C++ application logging system
+C++ application internal logging system
 
 A system that can be used to log similarly as ```std::cout <<``` would be used but with log levels.
+Designed for background service applications mainly.
 
  - possibility to suppress selected levels or make it completely silent
  - possibility to output log to file
@@ -10,4 +11,6 @@ A system that can be used to log similarly as ```std::cout <<``` would be used b
 	- journal contains count of repetions
 	- on screen displays _(duplicate message atleast once)_
 
-A example on usage is provided.
+Project uses some functions from my _common.hpp_ which contains some of my generally used code.
+
+A usage sample is included.
