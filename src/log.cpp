@@ -4,7 +4,11 @@
 #include "common.hpp"
 #include "log.hpp"
 
+#ifdef LOG_DUPLICATE_MSG
+static const std::string _dup_msg_str = LOG_DUPLICATE_MSG;
+#else
 static const std::string _dup_msg_str = "(duplicate message atleast once)";
+#endif
 
 const bool log::entry::equals(log::entry rhs) {
 
@@ -44,7 +48,13 @@ const bool log::_private::typeShouldEcho(const log::type type, const bool screen
 	else return false;
 }
 
-void log::_private::process_entry(const log::type type, const std::string msg, const log::endl_type endl) {
+void log::_private::process_entry(const log::type type, const std::string msg,
+		const bool entry_only, const std::string detailTxt) {
+
+	std::string entry_msg = common::trim_ws(msg);
+
+	if ( entry_msg.empty())
+		return;
 
 	log::entry _last = log::_private::store.size() > 0 ?
 		log::_private::store.back() : log::entry({
@@ -55,17 +65,20 @@ void log::_private::process_entry(const log::type type, const std::string msg, c
 	log::entry _entry = {
 		.type = type == log::type::ANY ?
 			static_cast<log::type>(0) : type,
-		.msg = msg,
+		.msg = entry_msg,
+		.description = detailTxt == "\x1B" ? "" : common::trim_ws(detailTxt),
 		.count = 1,
 	};
 
-	int _last2_idx = log::_private::lastIndexOf(_entry.type, msg);
+	int _last2_idx = log::_private::lastIndexOf(_entry.type, entry_msg);
 
 	if ( _entry.equals(_last)) {
 		_entry.timestamp = _last.timestamp;
 		_entry.timestamp_last = ( _entry.timestamp > _last.timestamp ?
 			_entry.timestamp : _last.timestamp);
 		_entry.count = _last.count + 1;
+		_entry.description = _entry.description.empty() && detailTxt != "\x1B" ?
+			_last.description : _entry.description;
 		_last2_idx = 0;
 	}
 
@@ -82,7 +95,7 @@ void log::_private::process_entry(const log::type type, const std::string msg, c
 	while ( log::_private::store.size() >= EVENT_LOG_MAX_SIZE + 1 )
 		log::_private::store.pop_front();
 
-	if ( log::_private::typeShouldEcho(type) &&
+	if ( !entry_only && log::_private::typeShouldEcho(type) &&
 		log::output_level[_entry.type]) {
 		bool equals = _entry.equals(_last_filtered);
 		if ( !equals || ( equals && log::_private::_last_msg != _dup_msg_str )) {
@@ -107,7 +120,43 @@ void log::_private::process_entry(const log::type type, const std::string msg, c
 	else if ( auto it = _last2_idx > 1 ?
 			std::next(log::_private::store.begin(), _last2_idx - 1) :
 			log::_private::store.begin();
-		it != log::_private::store.end()) it -> count++;
+		it != log::_private::store.end()) {
+
+		it -> count++;
+		it -> description = detailTxt == "\x1B" ? "" : (
+			_entry.description.empty() ? it -> description :
+				_entry.description);
+	}
+}
+
+void log::_private::flush(const log::type type) {
+	log::_private::_stream[type].str(std::string());
+	log::_private::_detail[type].clear();
+	log::_private::_stream[type].flush();
+}
+
+bool log::_private::endOfEntry(const log::type &f) {
+
+	if ( log::_private::_stream[f].str().find_first_of('\n', 0) !=
+		std::string::npos ) {
+
+		bool just_entry = false;
+		std::string str, d = log::_private::_detail[f];
+		std::getline(log::_private::_stream[f], str);
+
+		if ( str.back() == 0x1B ) {
+			just_entry = true;
+			str.pop_back();
+		}
+
+		while ( d.back() == '\n' )
+			d.pop_back();
+
+		log::_private::process_entry(f, str, just_entry, d);
+		return true;
+	}
+
+	return false;
 }
 
 const std::vector<log::entry> log::last(int count, const log::type type) {
