@@ -9,7 +9,7 @@ SHARED_OBJS:= \
 	objs/common.o
 
 MAIN_OBJS:= \
-	objs/log.o \
+	objs/logger.o \
 	objs/logtest.o
 
 LIBS:=
@@ -17,7 +17,7 @@ LIBS:=
 objs/common.o: shared/common.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<;
 
-objs/log.o: src/log.cpp
+objs/logger.o: src/logger.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<;
 
 objs/logtest.o: example/logtest.cpp
