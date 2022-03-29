@@ -13,7 +13,7 @@
 # define EVENT_LOG_MAX_SIZE 100
 #endif
 
-namespace log {
+namespace logger {
 
 	using endl_type = std::ostream& (std::ostream&);
 
@@ -36,35 +36,35 @@ namespace log {
 		return stream;
 	}
 
-	inline std::ostream& operator << (std::ostream &os, log::type type) {
+	inline std::ostream& operator << (std::ostream &os, logger::type type) {
 		switch ( type ) {
-			case log::type::info: return os << "info";
-			case log::type::error: return os << "error";
-			case log::type::verbose: return os << "verbose";
-			case log::type::vverbose: return os << "vverbose";
-			case log::type::debug: return os << "debug";
-			case log::type::ANY: return os << "ANY";
+			case logger::type::info: return os << "info";
+			case logger::type::error: return os << "error";
+			case logger::type::verbose: return os << "verbose";
+			case logger::type::vverbose: return os << "vverbose";
+			case logger::type::debug: return os << "debug";
+			case logger::type::ANY: return os << "ANY";
 			default: return os << "unknown";
 		}
 	}
 
-	inline const std::string description(const log::type type) {
+	inline const std::string description(const logger::type type) {
 		switch ( type ) {
-			case log::type::error: return "error";
-			case log::type::debug: return "debug";
+			case logger::type::error: return "error";
+			case logger::type::debug: return "debug";
 			default: return "info";
 		}
 	}
 
-	inline std::map<log::type, bool> output_level {
-		{ static_cast<log::type>(0), true },
-		{ static_cast<log::type>(1), true },
+	inline std::map<logger::type, bool> output_level {
+		{ static_cast<logger::type>(0), true },
+		{ static_cast<logger::type>(1), true },
 	};
 
 	struct entry {
 
 		public:
-			log::type type = static_cast<log::type>(0);
+			logger::type type = static_cast<logger::type>(0);
 			std::chrono::seconds timestamp = std::chrono::duration_cast<std::chrono::seconds>
 								(std::chrono::system_clock::now().time_since_epoch());
 			std::chrono::seconds timestamp_last = timestamp;
@@ -72,7 +72,7 @@ namespace log {
 			std::string description;
 			int count = 0;
 
-			const bool equals(log::entry rhs);
+			const bool equals(logger::entry rhs);
 			inline const bool hasDescription() {
 
 				return !this -> description.empty();
@@ -91,46 +91,46 @@ namespace log {
 				detailTxt(const std::string str) : str(str) { }
 		};
 
-		inline std::list<log::entry> store;
-		inline std::map<log::type, std::stringstream> _stream;
-		inline std::map<log::type, std::string> _detail;
+		inline std::list<logger::entry> store;
+		inline std::map<logger::type, std::stringstream> _stream;
+		inline std::map<logger::type, std::string> _detail;
 		inline std::string _last_msg;
 
-		const std::list<log::entry> filtered(void);
-		const int lastIndexOf(const log::type type, const std::string msg);
-		const bool typeShouldEcho(const log::type type, const bool screenOnly = false);
-		void process_entry(const log::type type, const std::string msg, const bool entry_only = false, const std::string detailTxt = "");
-		void flush(const log::type type);
-		bool endOfEntry(const log::type &f);
+		const std::list<logger::entry> filtered(void);
+		const int lastIndexOf(const logger::type type, const std::string msg);
+		const bool typeShouldEcho(const logger::type type, const bool screenOnly = false);
+		void process_entry(const logger::type type, const std::string msg, const bool entry_only = false, const std::string detailTxt = "");
+		void flush(const logger::type type);
+		bool endOfEntry(const logger::type &f);
 	}
 
-	inline const log::_private::detailTxt detail(const std::string s) {
+	inline const logger::_private::detailTxt detail(const std::string s) {
 
 		std::string str = s;
 		while ( str.back() == '\n' )
 			str.pop_back();
-		return log::_private::detailTxt(str);
+		return logger::_private::detailTxt(str);
 	}
 
 	template<typename T>
-	inline const log::type& operator << ( const log::type &f, const T input) {
-		log::_private::_stream[f] << input;
-		if ( log::_private::endOfEntry(f))
-			log::_private::flush(f);
+	inline const logger::type& operator << ( const logger::type &f, const T input) {
+		logger::_private::_stream[f] << input;
+		if ( logger::_private::endOfEntry(f))
+			logger::_private::flush(f);
 		return f;
 	};
 
-	inline const log::type& operator << ( const log::type &f, const log::endl_type endl) {
-		log::_private::_stream[f] << endl;
-		if ( log::_private::endOfEntry(f))
-			log::_private::flush(f);
+	inline const logger::type& operator << ( const logger::type &f, const logger::endl_type endl) {
+		logger::_private::_stream[f] << endl;
+		if ( logger::_private::endOfEntry(f))
+			logger::_private::flush(f);
 		return f;
 	};
 
-	inline const log::type& operator << ( const log::type &f, const log::_private::detailTxt detail) {
-		log::_private::_detail[f] = detail.str.empty() ? "\x1B" : detail.str;
+	inline const logger::type& operator << ( const logger::type &f, const logger::_private::detailTxt detail) {
+		logger::_private::_detail[f] = detail.str.empty() ? "\x1B" : detail.str;
 		return f;
 	};
 
-	const std::vector<log::entry> last(int count, const log::type type = log::type::ANY);
+	const std::vector<logger::entry> last(int count, const logger::type type = logger::type::ANY);
 };
