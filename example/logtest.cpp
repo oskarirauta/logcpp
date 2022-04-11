@@ -45,10 +45,12 @@ int main() {
 	logger::type t = logger::type::verbose;
 	std::cout << "Log type for t is " << t << " (should be verbose)" << std::endl;
 
+	logger::info << logger::tag("example") << "log entry with tag" << std::endl;
+
 	std::cout << "\nhistory:" << std::endl;
 	std::vector<logger::entry> hist = logger::last(10);
 	for ( auto it = hist.begin(); it != hist.end(); ++it ) {
-		std::cout << it -> type << ": " << it -> msg << ( it -> count > 1 ? ( " cnt: " + std::to_string(it -> count)) : "" ) << std::endl;
+		std::cout << it -> type << ( it -> tag.empty() ? "" : ( " [" + it -> tag + "]" )) << ": " << it -> msg << ( it -> count > 1 ? ( " cnt: " + std::to_string(it -> count)) : "" ) << std::endl;
 		if ( !it -> description.empty())
 			std::cout << "\tdescription: " << it -> description << std::endl;
 	}
