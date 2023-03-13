@@ -13,6 +13,9 @@ Designed for background service applications mainly.
  - add entries to journal without screen output
  - add detail description for entry (no screen output, only on a journal entry)
 
+### Todo
+ - update readme
+
 ### Entry to journal only
 
 custom message termination with log::endl which causes entry to record only on journal without screen output.
