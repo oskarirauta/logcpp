@@ -1,3 +1,4 @@
+all: world
 CXX?=g++
 CXXFLAGS?=--std=c++17 -Wall
 INCLUDES:=-I./include -I.
@@ -9,7 +10,6 @@ LOGGER_DIR:=.
 include common/Makefile.inc
 include Makefile.inc
 
-all: logger
 world: logger
 
 objs/main.o: main.cpp
