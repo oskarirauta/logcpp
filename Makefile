@@ -13,7 +13,6 @@ include Makefile.inc
 world: logger
 
 objs/main.o: main.cpp
-	echo "objs: $(LOGGER_OBJS)"
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<;
 
 logger: $(COMMON_OBJS) $(LOGGER_OBJS) $(LOGGER_EXAMPLE_OBJS)
