@@ -177,10 +177,10 @@ const std::vector<logger::entry> logger::last(const int& count, const logger::ty
 	while ( logger::_private::store.size() >= EVENT_LOG_MAX_SIZE + 1 )
 		logger::_private::store.pop_front();
 
-	int _count = count == 0 || logger::_private::store.size() < count ?
+	int _count = count == 0 || logger::_private::store.size() < (size_t)count ?
 		logger::_private::store.size() : count;
 
-	auto it = _count == logger::_private::store.size() ?
+	auto it = (size_t)_count == logger::_private::store.size() ?
 		logger::_private::store.begin() :
 			std::next(logger::_private::store.begin(),
 				logger::_private::store.size() - _count);
