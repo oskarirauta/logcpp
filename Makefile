@@ -1,21 +1,17 @@
-all: test
-
 CXX?=g++
-CXXFLAGS?=--std=c++17
-
+CXXFLAGS?=--std=c++17 -Wall
 INCLUDES:=-I./include -I.
 
-SHARED_OBJS:= \
-	objs/common.o
+LOGGER_OBJS:= \
+	objs/logger.o
 
-MAIN_OBJS:= \
-	objs/logger.o \
+EXAMPLE_OBJS:= \
 	objs/logtest.o
 
-LIBS:=
+include common/Makefile.inc
 
-objs/common.o: shared/common.cpp
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<;
+all: test
+world: test
 
 objs/logger.o: src/logger.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<;
@@ -23,8 +19,8 @@ objs/logger.o: src/logger.cpp
 objs/logtest.o: example/logtest.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<;
 
-test: $(SHARED_OBJS) $(MAIN_OBJS)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ $(LIBS) -o $@;
+test: $(COMMON_OBJS) $(LOGGER_OBJS) $(EXAMPLE_OBJS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@;
 
 clean:
 	rm -f objs/*.o test
