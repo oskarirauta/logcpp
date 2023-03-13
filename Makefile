@@ -2,25 +2,22 @@ CXX?=g++
 CXXFLAGS?=--std=c++17 -Wall
 INCLUDES:=-I./include -I.
 
-LOGGER_OBJS:= \
-	objs/logger.o
+LOGGER_EXAMPLE_OBJS:= \
+	objs/main.o
 
-EXAMPLE_OBJS:= \
-	objs/logtest.o
-
+LOGGER_DIR:=.
 include common/Makefile.inc
+include Makefile.inc
 
-all: test
-world: test
+all: logger
+world: logger
 
-objs/logger.o: src/logger.cpp
+objs/main.o: main.cpp
+	echo "objs: $(LOGGER_OBJS)"
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<;
 
-objs/logtest.o: example/logtest.cpp
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<;
-
-test: $(COMMON_OBJS) $(LOGGER_OBJS) $(EXAMPLE_OBJS)
+logger: $(COMMON_OBJS) $(LOGGER_OBJS) $(LOGGER_EXAMPLE_OBJS)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@;
 
 clean:
-	rm -f objs/*.o test
+	rm -f objs/*.o logger
