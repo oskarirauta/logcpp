@@ -105,10 +105,18 @@ void logger::_private::process_entry(const logger::type& type, const std::string
 			std::string _msg = equals ? _dup_msg_str : _entry.msg;
 			if ( type != static_cast<logger::type>(1) &&
 				logger::output_stream != nullptr)
-				*logger::output_stream << _msg << std::endl;
+				*logger::output_stream <<
+				#ifdef APPNAME
+					STRINGIFY_MACRO(APPNAME) << ": " <<
+				#endif
+					_msg << std::endl;
 			 else if ( type == static_cast<logger::type>(1) &&
 				logger::error_stream != nullptr )
-				*logger::error_stream << _msg << std::endl;
+				*logger::error_stream <<
+				#ifdef APPNAME
+					STRINGIFY_MACRO(APPNAME) << ": " <<
+				#endif
+					_msg << std::endl;
 
 			if ( logger::file_stream != nullptr )
 				*logger::file_stream << "[" << _entry.type << "] " << _msg << std::endl;
