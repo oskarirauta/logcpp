@@ -107,14 +107,14 @@ void logger::_private::process_entry(const logger::type& type, const std::string
 				logger::output_stream != nullptr)
 				*logger::output_stream <<
 				#ifdef APPNAME
-					APPNAME_STR << ": " <<
+					( logger::print_appname ? ( std::string(APPNAME_STR) + ": " ) : "" ) <<
 				#endif
 					_msg << std::endl;
 			 else if ( type == static_cast<logger::type>(1) &&
 				logger::error_stream != nullptr )
 				*logger::error_stream <<
 				#ifdef APPNAME
-					APPNAME_STR << ": " <<
+					( logger::print_appname ? ( std::string(APPNAME_STR) + ": " ) : "" ) <<
 				#endif
 					_msg << std::endl;
 

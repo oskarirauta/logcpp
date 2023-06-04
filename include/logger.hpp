@@ -61,6 +61,8 @@ namespace logger {
 		{ static_cast<logger::type>(1), true },
 	};
 
+	inline bool print_appname = false;
+
 	struct entry {
 
 		public:

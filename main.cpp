@@ -3,6 +3,7 @@
 
 int main() {
 
+	logger::print_appname = false;
 	logger::output_level[logger::verbose] = true;
 
 	std::cout << "output to standard output: test" << std::endl;
