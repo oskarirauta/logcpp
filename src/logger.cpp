@@ -13,7 +13,7 @@ static const std::string _dup_msg_str = "(duplicate message atleast once)";
 const bool logger::entry::equals(const logger::entry& rhs) {
 
 	return ( this -> type == logger::type::ANY ?
-		static_cast<logger::type>(0) : this -> type ) == rhs.type &&
+		static_cast<logger::type>(1) : this -> type ) == rhs.type &&
 		common::to_lower(this -> msg) == common::to_lower(rhs.msg);
 }
 
@@ -40,7 +40,7 @@ const int logger::_private::lastIndexOf(const logger::type& type, const std::str
 
 const bool logger::_private::typeShouldEcho(const logger::type& type, const bool& screenOnly) {
 
-	if ( type == static_cast<logger::type>(1) && // error type
+	if ( type == static_cast<logger::type>(0) && // error type
 		logger::error_stream != nullptr ) return true;
 	else if ( logger::output_stream != nullptr || (
 		!screenOnly && logger::file_stream != nullptr ))
@@ -64,7 +64,7 @@ void logger::_private::process_entry(const logger::type& type, const std::string
 
 	logger::entry _entry = {
 		.type = type == logger::type::ANY ?
-			static_cast<logger::type>(0) : type,
+			static_cast<logger::type>(1) : type, // default to info
 		.msg = entry_msg,
 		.tag = tagTxt == "\x1B" ? "" : common::trim_ws(tagTxt),
 		.description = detailTxt == "\x1B" ? "" : common::trim_ws(detailTxt),
@@ -103,18 +103,18 @@ void logger::_private::process_entry(const logger::type& type, const std::string
 		if ( !equals || ( equals && logger::_private::_last_msg != _dup_msg_str )) {
 
 			std::string _msg = equals ? _dup_msg_str : _entry.msg;
-			if ( type != static_cast<logger::type>(1) &&
+			if ( type != static_cast<logger::type>(0) &&
 				logger::output_stream != nullptr)
 				*logger::output_stream <<
 				#ifdef APPNAME
-					( logger::print_appname ? ( std::string(APPNAME_STR) + ": " ) : "" ) <<
+					( logger::print_appname && !std::string(APPNAME_STR).empty() ? ( std::string(APPNAME_STR) + ": " ) : "" ) <<
 				#endif
 					_msg << std::endl;
-			 else if ( type == static_cast<logger::type>(1) &&
+			 else if ( type == static_cast<logger::type>(0) &&
 				logger::error_stream != nullptr )
 				*logger::error_stream <<
 				#ifdef APPNAME
-					( logger::print_appname ? ( std::string(APPNAME_STR) + ": " ) : "" ) <<
+					( logger::print_appname && !std::string(APPNAME_STR).empty() ? ( std::string(APPNAME_STR) + ": " ) : "" ) <<
 				#endif
 					_msg << std::endl;
 

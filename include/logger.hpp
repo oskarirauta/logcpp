@@ -22,10 +22,11 @@ namespace logger {
 	inline std::ostream* file_stream = nullptr;
 
 	enum type: uint8_t {
-		info = 0,
-		error = 1,
-		verbose,
-		vverbose,
+		error = 0,
+		info = 1,
+		warning = 2,
+		verbose = 3,
+		vverbose = 4,
 		debug = 254,
 		ANY = 255
 	};
@@ -38,8 +39,9 @@ namespace logger {
 
 	inline std::ostream& operator << (std::ostream& os, logger::type& type) {
 		switch ( type ) {
-			case logger::type::info: return os << "info";
 			case logger::type::error: return os << "error";
+			case logger::type::info: return os << "info";
+			case logger::type::warning: return os << "warning";
 			case logger::type::verbose: return os << "verbose";
 			case logger::type::vverbose: return os << "vverbose";
 			case logger::type::debug: return os << "debug";
@@ -51,14 +53,15 @@ namespace logger {
 	inline const std::string description(const logger::type& type) {
 		switch ( type ) {
 			case logger::type::error: return "error";
+			case logger::type::warning: return "warning";
 			case logger::type::debug: return "debug";
 			default: return "info";
 		}
 	}
 
 	inline std::map<logger::type, bool> output_level {
-		{ static_cast<logger::type>(0), true },
-		{ static_cast<logger::type>(1), true },
+		{ static_cast<logger::type>(0), true }, // level: error
+		{ static_cast<logger::type>(1), true }, // level: info
 	};
 
 	inline bool print_appname = false;
@@ -66,7 +69,7 @@ namespace logger {
 	struct entry {
 
 		public:
-			logger::type type = static_cast<logger::type>(0);
+			logger::type type = static_cast<logger::type>(1); // default to info level
 			std::chrono::seconds timestamp = std::chrono::duration_cast<std::chrono::seconds>
 								(std::chrono::system_clock::now().time_since_epoch());
 			std::chrono::seconds timestamp_last = timestamp;
