@@ -64,6 +64,12 @@ namespace logger {
 		{ static_cast<logger::type>(1), true }, // level: info
 	};
 
+	// return highest enabled log output level, but always reports error, even if it's suppressed
+	logger::type loglevel();
+
+	// enable selected output level and all prior to it
+	void loglevel(const logger::type& level);
+
 	inline bool print_appname = false;
 
 	struct entry {
@@ -102,7 +108,7 @@ namespace logger {
 				tagTxt(const std::string& str) : str(str) {}
 		};
 
-		inline std::list<logger::entry> store;
+		extern std::list<logger::entry> store;
 		inline std::map<logger::type, std::stringstream> _stream;
 		inline std::map<logger::type, std::string> _detail;
 		inline std::map<logger::type, std::string> _tag;

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <algorithm>
+#include <utility>
 
 #include "common.hpp"
 #include "logger.hpp"
@@ -10,11 +11,13 @@ static const std::string _dup_msg_str = LOG_DUPLICATE_MSG;
 static const std::string _dup_msg_str = "(duplicate message atleast once)";
 #endif
 
+std::list<logger::entry> logger::_private::store;
+
 const bool logger::entry::equals(const logger::entry& rhs) {
 
 	return ( this -> type == logger::type::ANY ?
 		static_cast<logger::type>(1) : this -> type ) == rhs.type &&
-		common::to_lower(this -> msg) == common::to_lower(rhs.msg);
+		common::to_lower(std::as_const(this -> msg)) == common::to_lower(std::as_const(rhs.msg));
 }
 
 const std::list<logger::entry> logger::_private::filtered(void) {
@@ -35,7 +38,7 @@ const int logger::_private::lastIndexOf(const logger::type& type, const std::str
 		[&](logger::entry e) { return e.type == type ? true : false; });
 
 	return idx == logger::_private::store.rend() ? 0 :
-		( common::to_lower(msg) == common::to_lower(idx -> msg) ? std::distance(idx, logger::_private::store.rend()) : 0);
+		( common::to_lower(std::as_const(msg)) == common::to_lower(std::as_const(idx -> msg)) ? std::distance(idx, logger::_private::store.rend()) : 0);
 }
 
 const bool logger::_private::typeShouldEcho(const logger::type& type, const bool& screenOnly) {
@@ -197,4 +200,29 @@ const std::vector<logger::entry> logger::last(const int& count, const logger::ty
 		store.push_back(*itl);
 
 	return store;
+}
+
+// return highest enabled log output level, but always reports error, even if it's suppressed
+logger::type logger::loglevel() {
+
+	logger::type r = logger::error;
+
+	if ( logger::output_level[logger::info]) r = logger::info;
+	if ( logger::output_level[logger::warning]) r = logger::warning;
+	if ( logger::output_level[logger::verbose]) r = logger::verbose;
+	if ( logger::output_level[logger::vverbose]) r = logger::vverbose;
+	if ( logger::output_level[logger::debug]) r = logger::debug;
+
+	return r;
+}
+
+// enable selected output level and all prior to it
+void logger::loglevel(const logger::type& level) {
+
+	logger::output_level[logger::error] = (int)level >= 0 ? true : false;
+	logger::output_level[logger::info] = (int)level >= 1 ? true : false;
+	logger::output_level[logger::warning] = (int)level >= 2 ? true : false;
+	logger::output_level[logger::verbose] = (int)level >= 3 ? true : false;
+	logger::output_level[logger::vverbose] = (int)level >= 4 ? true : false;
+	logger::output_level[logger::debug] = (int)level >= 254 ? true : false;
 }
