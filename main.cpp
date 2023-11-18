@@ -4,7 +4,9 @@
 int main() {
 
 	logger::print_appname = false;
-	logger::output_level[logger::verbose] = true;
+	//logger::output_level[logger::verbose] = true;
+
+	logger::loglevel(logger::info);
 
 	std::cout << "output to standard output: test" << std::endl;
 
@@ -23,10 +25,12 @@ int main() {
 	logger::info << "info level: dup test" << std::endl;
 	logger::info << "info level: dup test" << logger::detail("extension for dup test") << std::endl;
 	logger::info << "info level: dup test" << std::endl;
+
 	/*
 	// force clear detailed description on update
 	logger::info << "info level: dup test" << logger::detail("") << std::endl;
 	*/
+
 	logger::verbose << "log entry #7 to verbose level: item11" << std::endl;
 	logger::info << "info level: dup test" << std::endl;
 
@@ -49,7 +53,7 @@ int main() {
 	logger::info << logger::tag("example") << "log entry with tag" << std::endl;
 
 	std::cout << "\nhistory:" << std::endl;
-	std::vector<logger::entry> hist = logger::last(10);
+	std::vector<logger::entry> hist = logger::last(20);
 	for ( auto it = hist.begin(); it != hist.end(); ++it ) {
 		std::cout << it -> type << ( it -> tag.empty() ? "" : ( " [" + it -> tag + "]" )) << ": " << it -> msg << ( it -> count > 1 ? ( " cnt: " + std::to_string(it -> count)) : "" ) << std::endl;
 		if ( !it -> description.empty())
