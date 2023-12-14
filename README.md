@@ -1,7 +1,7 @@
 # logcpp
 C++ application internal logging system
 
-Logger has matured to version 2; some features were removed, some features were renamed
+logcpp has matured to version 2; some features were removed, some features were renamed
 but for most parts it is a drop-in replacement of version 1, without requirement to any
 changes in your project's code.
 
@@ -63,7 +63,6 @@ Project uses some functions from my _common.hpp_ which contains some of my gener
 ### Importing
 import commoncpp as a submodule to directory common
 import logcpp as a submodule to logger
-
 include commoncpp's Makefile.inc and logcpp's Makefile.inc in your Makefile
 and check example from project's samples Makefile (link with COMMON_OBJS and LOGGER_OBJS).
 
