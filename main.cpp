@@ -5,7 +5,7 @@
 int main(int argc, char **argv) {
 
 	//logger::set_loglevel(logger::verbose);
-	logger::silence = true;
+	//logger::silence = true;
 
 	std::cout << "output to standard output: test" << std::endl;
 
