@@ -7,7 +7,9 @@ int main(int argc, char **argv) {
 	//logger::set_loglevel(logger::verbose);
 	//logger::silence = true;
 
-	std::cout << "output to standard output: test" << std::endl;
+	std::cout << "logger example" << std::endl;
+	std::cout << "default logging level is info(2), currently set logging level is " << logger::log_level << std::endl;
+	std::cout << "this is cout outputting to standard output: test - now beginning to output tests to logging streams\n" << std::endl;
 
 	logger::info << std::string("log entry #1 to info level: item1") << std::endl;
 
@@ -45,12 +47,12 @@ int main(int argc, char **argv) {
 	// but this works..
 	logger::verbose << "message4\n" << "message5" << "\n" << "message6" << std::endl;
 
-	std::cout << "Log type for t is \"" << logger::verbose << "\" (should be verbose)" << std::endl;
+	std::cout << "\nLog level for t is \"" << logger::verbose << "\" (should be verbose)" << std::endl;
 
 	logger::info << logger::tag("example") << "log entry with tag" << std::endl;
 	logger::info["tagged"] << "another entry with tag, but this time defined with subscript operator []" << std::endl;
 
-	std::cout << "\nhistory:" << std::endl;
+	std::cout << "\nlog history(max 20 entries):" << std::endl;
 	std::vector<logger::entry> hist = logger::history(20);
 	for ( auto it = hist.begin(); it != hist.end(); ++it ) {
 		std::cout << it -> name << ( it -> tag.empty() ? "" : ( " [" + it -> tag + "]" )) << ": " << it -> msg << ( it -> count > 1 ? ( " cnt: " + std::to_string(it -> count)) : "" ) << std::endl;
