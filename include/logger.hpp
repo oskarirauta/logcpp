@@ -1,167 +1,293 @@
 #pragma once
 
+#include <algorithm>
 #include <iostream>
-#include <ostream>
-#include <sstream>
-#include <string>
-#include <chrono>
+#include <cstdint>
 #include <vector>
-#include <list>
+#include <string>
+#include <mutex>
 #include <map>
 
-#ifndef EVENT_LOG_MAX_SIZE
-# define EVENT_LOG_MAX_SIZE 100
-#endif
+#include "common.hpp"
+#include "logger/entry.hpp"
+#include "logger/tag.hpp"
+#include "logger/detail.hpp"
 
 namespace logger {
 
-	using endl_type = std::ostream& (std::ostream&);
+	enum STREAM { std_out, std_err };
 
-	inline std::ostream* output_stream = &std::cout; // set to nullptr to quiet
-	inline std::ostream* error_stream = &std::cerr; // set to nullptr to quiet
-	inline std::ostream* file_stream = nullptr;
+	extern std::map<logger::STREAM, std::ostream*> stream;
+	extern std::ostream* file_stream;
 
-	enum type: uint8_t {
-		error = 0,
-		info = 1,
-		warning = 2,
-		verbose = 3,
-		vverbose = 4,
-		debug = 254,
-		ANY = 255
-	};
+	extern bool silence;
+	extern bool use_timestamps;
+	extern std::string prefix;
+	extern size_t max_log_entries;
+	extern uint8_t log_level;
 
-	inline std::ostream& endl(std::ostream& stream) {
+	template<typename Ch, typename Traits = std::char_traits<Ch>,
+		typename Sequence = std::vector<Ch> >
+	struct basic_LOG_LEVEL : std::basic_streambuf<Ch, Traits>, public std::ostream {
 
-		stream << "\x1B\n";
-		return stream;
-	}
+		typedef std::basic_streambuf<Ch, Traits> base_type;
+		typedef typename base_type::int_type int_type;
+		typedef typename base_type::traits_type traits_type;
 
-	inline std::ostream& operator << (std::ostream& os, logger::type& type) {
-		switch ( type ) {
-			case logger::type::error: return os << "error";
-			case logger::type::info: return os << "info";
-			case logger::type::warning: return os << "warning";
-			case logger::type::verbose: return os << "verbose";
-			case logger::type::vverbose: return os << "vverbose";
-			case logger::type::debug: return os << "debug";
-			case logger::type::ANY: return os << "ANY";
-			default: return os << "unknown";
-		}
-	}
+		private:
+			basic_LOG_LEVEL& _flush();
+			uint8_t _id;
+			std::string _name;
+			STREAM _stream;
 
-	inline const std::string description(const logger::type& type) {
-		switch ( type ) {
-			case logger::type::error: return "error";
-			case logger::type::warning: return "warning";
-			case logger::type::debug: return "debug";
-			default: return "info";
-		}
-	}
+		protected:
 
-	inline std::map<logger::type, bool> output_level {
-		{ static_cast<logger::type>(0), true }, // level: error
-		{ static_cast<logger::type>(1), true }, // level: info
-	};
+			Sequence _buf;
+			std::string _tag;
+			std::string _detail;
 
-	// return highest enabled log output level, but always reports error, even if it's suppressed
-	logger::type loglevel();
+			void _reset();
+			void _parse();
+			int _sync();
+			int_type _overflow(int_type ch);
 
-	// enable selected output level and all prior to it
-	void loglevel(const logger::type& level);
-
-	inline bool print_appname = false;
-
-	struct entry {
+			virtual int sync() override { return this -> _sync(); }
 
 		public:
-			logger::type type = static_cast<logger::type>(1); // default to info level
-			std::chrono::seconds timestamp = std::chrono::duration_cast<std::chrono::seconds>
-								(std::chrono::system_clock::now().time_since_epoch());
-			std::chrono::seconds timestamp_last = timestamp;
-			std::string msg;
-			std::string tag;
-			std::string description;
-			int count = 0;
 
-			const bool equals(const logger::entry& rhs);
-			inline const bool hasDescription() { return !this -> description.empty(); }
-			inline const bool hasTag() { return !this -> tag.empty(); }
+			virtual int_type overflow(int_type ch) { return this -> _overflow(ch); }
+			const std::string name() const;
+			uint8_t id() const;
+			STREAM stream() const;
+			void change_logging_level(const uint8_t new_level);
 
+			basic_LOG_LEVEL& operator [](const std::string& t);
+			operator std::string() const;
+
+			basic_LOG_LEVEL(const std::string& name, uint8_t level, logger::STREAM stream = logger::std_out) :
+				std::ostream(this), _id(level), _name(name), _stream(stream) {}
+
+			template <typename C>
+			friend std::ostream& operator <<(std::ostream& os, basic_LOG_LEVEL<C>& l);
 	};
 
-	namespace _private { // anonymous namespace / private member(s)
+	typedef basic_LOG_LEVEL<char> LOG_LEVEL;
 
-		struct detailTxt {
+	namespace _private {
 
-			public:
-
-				std::string str;
-				detailTxt(const std::string& str) : str(str) {}
-		};
-
-		struct tagTxt {
-
-			public:
-
-				std::string str;
-				tagTxt(const std::string& str) : str(str) {}
-		};
-
-		extern std::list<logger::entry> store;
-		inline std::map<logger::type, std::stringstream> _stream;
-		inline std::map<logger::type, std::string> _detail;
-		inline std::map<logger::type, std::string> _tag;
-		inline std::string _last_msg;
-
-		const std::list<logger::entry> filtered(void);
-		const int lastIndexOf(const logger::type& type, const std::string& msg);
-		const bool typeShouldEcho(const logger::type& type, const bool& screenOnly = false);
-		void process_entry(const logger::type& type, const std::string& msg, const bool& entry_only = false, const std::string& detailTxt = "", const std::string& tagTxt = "");
-		void flush(const logger::type& type);
-		bool endOfEntry(const logger::type& f);
+		extern logger::entry last;
+		extern std::vector<logger::entry> store;
+		extern std::mutex m;
 	}
 
-	inline const logger::_private::detailTxt detail(const std::string& s) {
+	void set_loglevel(const logger::LOG_LEVEL& level);
+	const logger::entry last();
+	const logger::entry last(const logger::LOG_LEVEL& level);
+	const std::vector<logger::entry> history(size_t count = 0);
+	const std::vector<logger::entry> history(size_t count, const logger::LOG_LEVEL& level);
 
-		std::string str = s;
-		while ( str.back() == '\n' )
-			str.pop_back();
-		return logger::_private::detailTxt(str);
+	extern LOG_LEVEL error;
+	extern LOG_LEVEL warning;
+	extern LOG_LEVEL info;
+	extern LOG_LEVEL verbose;
+	extern LOG_LEVEL vverbose;
+	extern LOG_LEVEL debug;
+
+	template<typename C>
+	std::ostream& operator <<(std::ostream& os, basic_LOG_LEVEL<C>& l);
+
+}
+
+template<typename Ch, typename Traits, typename Sequence>
+logger::basic_LOG_LEVEL<Ch, Traits, Sequence>& logger::basic_LOG_LEVEL<Ch, Traits, Sequence>::_flush() {
+
+	if ( !this -> _tag.empty()) {
+		std::erase_if(this -> _tag, [](char ch) { return std::string("\r\v").find(ch) != std::string::npos; });
+		std::replace_if(this -> _tag.begin(), this -> _tag.end(),
+			[](char ch) { return std::string("\n\t").find(ch) != std::string::npos; }, ' ');
+		this -> _tag = common::trim_ws(this -> _tag);
 	}
 
-	inline const logger::_private::tagTxt tag(const std::string& s) {
-
-		std::string str = s;
-		while ( str.back() == '\n' )
-			str.pop_back();
-		return logger::_private::tagTxt(str);
+	if ( !this -> _detail.empty()) {
+		std::erase_if(this -> _tag, [](char ch) { return std::string("\r\v").find(ch) != std::string::npos; });
+		std::replace_if(this -> _tag.begin(), this -> _tag.end(),
+			[](char ch) { return std::string("\n\t").find(ch) != std::string::npos; }, ' ');
+		this -> _detail = common::trim_ws(this -> _tag);
 	}
 
-	template<typename T>
-	inline const logger::type& operator << ( const logger::type& f, const T& input) {
-		logger::_private::_stream[f] << input;
-		if ( logger::_private::endOfEntry(f))
-			logger::_private::flush(f);
-		return f;
+	logger::entry e = {
+		.name = this -> _name,
+		.id = this -> _id,
+		.msg = common::trim_ws(std::string(this -> _buf.begin(), this -> _buf.end())),
+		.tag = this -> _tag,
+		.detail = this -> _detail,
+		.count = 1
 	};
 
-	inline const logger::type& operator << ( const logger::type& f, const logger::endl_type& endl) {
-		logger::_private::_stream[f] << endl;
-		if ( logger::_private::endOfEntry(f))
-			logger::_private::flush(f);
-		return f;
-	};
+	if ( e.name.empty() || e.msg.empty())
+		return *this;
 
-	inline const logger::type& operator << ( const logger::type& f, const logger::_private::detailTxt& detail) {
-		logger::_private::_detail[f] = detail.str.empty() ? "\x1B" : detail.str;
-		return f;
-	};
+	if ( logger::file_stream != nullptr ) {
+		*(logger::file_stream) << e << std::endl;
+		if ( !e.detail.empty())
+			*(logger::file_stream) << e.detail_spacing() << e.detail << std::endl;
+	}
 
-	inline const logger::type& operator << ( const logger::type& f, const logger::_private::tagTxt& tag) {
-		logger::_private::_tag[f] = tag.str.empty() ? "\x1B" : tag.str;
-		return f;
-	};
+	const std::lock_guard<std::mutex> lock(logger::_private::m);
 
-	const std::vector<logger::entry> last(const int& count, const logger::type& type = logger::type::ANY);
-};
+	if ( !logger::_private::store.empty() && logger::_private::last == e ) {
+
+		if ( logger::_private::store.back() == e ) {
+
+			if ( !logger::_private::store.back().has_tag() && !this -> _tag.empty())
+				logger::_private::store.back().tag = this -> _tag;
+
+			if ( !logger::_private::store.back().has_detail() && !this -> _detail.empty())
+				logger::_private::store.back().detail = this -> _detail;
+
+		}
+
+		if ( logger::_private::last.count == 1 ) {
+
+			#ifdef LOG_DUPLICATE_MSG
+			e.msg = LOG_DUPLICATE_MSG;
+			#else
+			e.msg = "(duplicate message atleast once)";
+			#endif
+
+			e.tag = logger::_private::last.tag;
+			e.detail = "";
+
+			if ( !logger::silence && logger::log_level > this -> _id )
+				*(logger::stream[this -> _stream]) << e << std::endl;
+		}
+
+		logger::_private::store.back().timestamp_last =
+			std::chrono::duration_cast<std::chrono::seconds>
+				(std::chrono::system_clock::now().time_since_epoch());
+
+		logger::_private::store.back().count++;
+		logger::_private::last.count++;
+		return *this;
+	}
+
+	if ( !logger::silence && logger::log_level > this -> _id )
+		*(logger::stream[this -> _stream]) << e << std::endl;
+
+	logger::_private::last = e;
+	logger::_private::store.push_back(e);
+
+	if ( logger::_private::store.size() > logger::max_log_entries )
+		logger::_private::store.erase(logger::_private::store.begin());
+
+	return *this;
+}
+
+template<typename Ch, typename Traits, typename Sequence>
+void logger::basic_LOG_LEVEL<Ch, Traits, Sequence>::_reset() {
+	this -> _buf.clear();
+	this -> _tag.clear();
+	this -> _detail.clear();
+}
+
+template<typename Ch, typename Traits, typename Sequence>
+void logger::basic_LOG_LEVEL<Ch, Traits, Sequence>::_parse() {
+
+	begin_parse:
+
+	if ( auto begin = std::find_if(this -> _buf.begin(), this -> _buf.end(), [](Ch c) { return c == 0002; }); begin != this -> _buf.end()) {
+		if ( auto end = std::find_if(begin, this -> _buf.end(), [](Ch c) { return c == 0003; }); end != this -> _buf.end()) {
+			if ( auto sep = std::find_if(begin, end, [](Ch c) { return c == ':'; }); sep != _buf.end()) {
+
+				std::string t(begin, sep);
+				std::string v(sep, end);
+				if ( !t.empty() && t.front() == 2 )
+					t.erase(0, 1);
+				if ( !v.empty() && v.front() == ':' )
+					v.erase(0, 1);
+				if ( !v.empty() && v.back() == 3 )
+					v.pop_back();
+
+				if ( t == "tag" )
+					this -> _tag = common::trim_ws(v);
+				else if ( t == "detail" )
+					this -> _detail = common::trim_ws(v);
+
+				this -> _buf.erase(begin, end);
+				goto begin_parse;
+			}
+		}
+	}
+
+	std::erase_if(this -> _buf, [](char ch) { return ch == 2 || ch == 3; });
+}
+
+template<typename Ch, typename Traits, typename Sequence>
+int logger::basic_LOG_LEVEL<Ch, Traits, Sequence>::_sync() {
+
+	if ( !this -> _buf.empty() && this -> _buf.back() == '\n' )
+		this -> _buf.pop_back();
+
+	std::erase_if(this -> _buf, [](char ch) { return std::string("\r\v").find(ch) != std::string::npos; });
+	std::replace_if(this -> _buf.begin(), this -> _buf.end(),
+		[](char ch) { return std::string("\n\t").find(ch) != std::string::npos; }, ' ');
+
+	if ( this -> _buf.size() != 0 )
+		this -> _parse();
+
+	if ( this -> _buf.size() == 0 ) {
+		this -> _reset();
+		return -1;
+	}
+
+	this -> _flush();
+	this -> _reset();
+	return 0;
+}
+
+template<typename Ch, typename Traits, typename Sequence>
+logger::basic_LOG_LEVEL<Ch, Traits, Sequence>::int_type logger::basic_LOG_LEVEL<Ch, Traits, Sequence>::_overflow(int_type ch) {
+
+	if ( traits_type::eq_int_type(ch, traits_type::eof()))
+		return traits_type::eof();
+
+	this -> _buf.push_back(traits_type::to_char_type(ch));
+	return ch;
+}
+
+template<typename Ch, typename Traits, typename Sequence>
+logger::basic_LOG_LEVEL<Ch, Traits, Sequence>& logger::basic_LOG_LEVEL<Ch, Traits, Sequence>::operator [](const std::string& t) {
+	this -> _tag = common::trim_ws(t);
+	return *this;
+}
+
+template<typename Ch, typename Traits, typename Sequence>
+const std::string logger::basic_LOG_LEVEL<Ch, Traits, Sequence>::name() const {
+	return this -> operator std::string();
+}
+
+template<typename Ch, typename Traits, typename Sequence>
+uint8_t logger::basic_LOG_LEVEL<Ch, Traits, Sequence>::id() const {
+	return this -> _id;
+}
+
+template<typename Ch, typename Traits, typename Sequence>
+logger::STREAM logger::basic_LOG_LEVEL<Ch, Traits, Sequence>::stream() const {
+	return this -> _stream;
+}
+
+template<typename Ch, typename Traits, typename Sequence>
+void logger::basic_LOG_LEVEL<Ch, Traits, Sequence>::change_logging_level(const uint8_t new_level) {
+	this -> _id = new_level;
+}
+
+template<typename Ch, typename Traits, typename Sequence>
+logger::basic_LOG_LEVEL<Ch, Traits, Sequence>::operator std::string() const {
+	return this -> _name;
+}
+
+template<typename C>
+std::ostream& logger::operator <<(std::ostream& os, logger::basic_LOG_LEVEL<C>& l) {
+	os << l.operator std::string();
+	return os;
+}

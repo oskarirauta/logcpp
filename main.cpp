@@ -1,12 +1,11 @@
 #include <iostream>
+#include <string>
 #include "logger.hpp"
 
-int main() {
+int main(int argc, char **argv) {
 
-	logger::print_appname = false;
-	//logger::output_level[logger::verbose] = true;
-
-	logger::loglevel(logger::info);
+	//logger::set_loglevel(logger::verbose);
+	logger::silence = true;
 
 	std::cout << "output to standard output: test" << std::endl;
 
@@ -37,8 +36,7 @@ int main() {
 	// termination logger::endl (instead of '\n' or std::endl) adds entry
 	// to journal without screen output
 	logger::info << "log entry #8 to info level";
-	logger::info << logger::detail("entry only without screen output") << logger::endl;
-	logger::ANY << "any level test.. should map to INFO level" << std::endl;
+	logger::info << logger::detail("entry only without screen output") << std::endl;
 
 	// only message1 is accepted
 	std::cout << "adding \"message1\\nmessage2\\nmessage3 << std::endl to verbose level, only message1 is accepted (a caveat)" << std::endl;
@@ -47,17 +45,17 @@ int main() {
 	// but this works..
 	logger::verbose << "message4\n" << "message5" << "\n" << "message6" << std::endl;
 
-	logger::type t = logger::type::verbose;
-	std::cout << "Log type for t is " << t << " (should be verbose)" << std::endl;
+	std::cout << "Log type for t is \"" << logger::verbose << "\" (should be verbose)" << std::endl;
 
 	logger::info << logger::tag("example") << "log entry with tag" << std::endl;
+	logger::info["tagged"] << "another entry with tag, but this time defined with subscript operator []" << std::endl;
 
 	std::cout << "\nhistory:" << std::endl;
-	std::vector<logger::entry> hist = logger::last(20);
+	std::vector<logger::entry> hist = logger::history(20);
 	for ( auto it = hist.begin(); it != hist.end(); ++it ) {
-		std::cout << it -> type << ( it -> tag.empty() ? "" : ( " [" + it -> tag + "]" )) << ": " << it -> msg << ( it -> count > 1 ? ( " cnt: " + std::to_string(it -> count)) : "" ) << std::endl;
-		if ( !it -> description.empty())
-			std::cout << "\tdescription: " << it -> description << std::endl;
+		std::cout << it -> name << ( it -> tag.empty() ? "" : ( " [" + it -> tag + "]" )) << ": " << it -> msg << ( it -> count > 1 ? ( " cnt: " + std::to_string(it -> count)) : "" ) << std::endl;
+		if ( it -> has_detail())
+			std::cout << it -> detail_spacing() << it -> detail << std::endl;
 	}
 
 	return 0;

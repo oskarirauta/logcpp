@@ -1,6 +1,6 @@
 all: world
 CXX?=g++
-CXXFLAGS?=--std=c++17 -Wall -DAPPNAME=logger-test
+CXXFLAGS?=--std=c++20 -Wall
 INCLUDES:=-I./include -I.
 
 OBJS:= \

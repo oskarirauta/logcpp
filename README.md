@@ -1,30 +1,35 @@
 # logcpp
 C++ application internal logging system
 
+Logger has matured to version 2; some features were removed, some features were renamed
+but for most parts it is a drop-in replacement of version 1, without requirement to any
+changes in your project's code.
+
 A system that can be used to log similarly as ```std::cout <<``` would be used but with log levels.
 Designed for background service applications mainly.
 
- - possibility to suppress selected levels or make it completely silent
+ - possibility to select logging level or make it completely silent
  - possibility to output log to file
- - log journal
+ - logging history
  - supressed duplicate messages
 	- journal contains count of repetions
 	- on screen displays _(duplicate message atleast once)_
- - add entries to journal without screen output
+ - tag log entries
  - add detail description for entry (no screen output, only on a journal entry)
 
-### Todo
- - update readme
+### Log Entry
 
-### Entry to journal only
+```log::info << "log this line to info level" << std::endl;```
 
-custom message termination with log::endl which causes entry to record only on journal without screen output.
-It's a simple output only manipulator with "\x1B\n" where 0x1b is ascii for ESC and \0x1B + \n is handled as termination of message + no screen output. ESC is stripped from final message.
+### Tag entries
 
-```log::info << "this to journal only" << log::endl;```
-or manually:
+You can either use
 
-```log::info << "journal only entry\x1B\n";```
+```log::info << log::tag("my_tag") << "tagged message" << std::endl;```
+
+or, you can use a subscript operator[]
+
+```log::info["my_tag"] << "tagged message" << std::endl;```
 
 ### Entry's detail description
 
@@ -32,44 +37,37 @@ Add detail description to log entry:
 
 ```log::info << "message title" << log::detail("message detail description") << std::endl;```
 
-if duplicate entries occur, last detail description is kept, until new duplicate's detail description is cleared with:
-
-```log::info << "this is duplicated title from previous entry" << log::detail("") << std::endl;```
-
-Only on detail description is kept, it is always the last one used unless cleared which results in detail description being empty until next duplicated entry has a detail description again.
-
 ### Custom log levels
 
-Adding custom log levels is easy, just add them to _type_ enum in _log.hpp_ but keep in mind that _info_ and _error_ should always come first hardcoded values to 0 and 1, and _ANY_ should be last with hardcoded value of 255, _debug_ level is not mandatory to be 254, but I've set it so for possible futures needs.
-You can even remove verbose and vverbose if you want to, or even debug can be removed if wanted to.
+Adding custom log levels is supported, just create them like this:
 
-### Can I add levels during runtime?
+```logger::LOG_LEVEL my_level("my", 10, logger::std_out);```
 
-Sorry, no you can't due to design of logcpp.
+Where last argument is optional, and can be aswell be std_err;
+First argument is name, and second is level id. Default provided ids are:
+error = 0, warning = 1, info = 2, verbose = 3, vverbose = 4, debug = 255
 
-### Issues
+You can always change ids, for example like this:
 
-A minor known caveat; logging entry with
+```log::info.change_logging_level(10);```
 
-```log::info << "message1\nmessage2\nmessage3" << std::endl;```
+### Trimming
 
-adds only one entry with ```message1``` and rest of message is discarded and not accepted to next entries.
-but on the other hand, this works:
-
-```log::info << "message4\n" << "message5" << "\n" << "message6" << std::endl;```
-
-which results in 3 log entries with titles _message4_, _message5_ and _message6_.
+log entries are trimmed, line feeds and tabs ( \n and \t ) are converted to spaces,
+and \r \v will be erased from tags, details and messages.
 
 ### Depencies
 
 Project uses some functions from my _common.hpp_ which contains some of my generally used code.
-To use logcpp in your project, you need to include 4 files from this repository:
- - include/common.hpp
- - include/log.hpp
- - shared/common.cpp
- - src/log.cpp
 
-Or you can create your own _common.[hpp,cpp]_ with using only necessary parts from there as _common_ has rather large footprint when it comes to needs of logcpp.
+### Importing
+import commoncpp as a submodule to directory common
+import logcpp as a submodule to logger
+
+include commoncpp's Makefile.inc and logcpp's Makefile.inc in your Makefile
+and check example from project's samples Makefile (link with COMMON_OBJS and LOGGER_OBJS).
+
+Don't forget to #include "logger.hpp" in your project's code where you plan to use logger.
 
 ### Example
 
