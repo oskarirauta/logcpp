@@ -80,7 +80,7 @@ namespace logger {
 		extern std::mutex m;
 	}
 
-	void set_loglevel(const logger::LOG_LEVEL& level);
+	void loglevel(const logger::LOG_LEVEL& level);
 	const logger::entry last();
 	const logger::entry last(const logger::LOG_LEVEL& level);
 	const std::vector<logger::entry> history(size_t count = 0);
