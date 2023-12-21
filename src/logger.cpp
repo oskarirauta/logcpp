@@ -92,5 +92,6 @@ const std::vector<logger::entry> logger::history(size_t count, const logger::LOG
 }
 
 void logger::loglevel(const logger::LOG_LEVEL& level) {
+
 	logger::log_level = level.id();
 }

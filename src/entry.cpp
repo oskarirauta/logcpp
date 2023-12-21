@@ -5,10 +5,12 @@
 #include "logger.hpp"
 
 bool logger::entry::has_detail() const {
+
 	return !this -> detail.empty();
 }
 
 bool logger::entry::has_tag() const {
+
 	return !this -> tag.empty();
 }
 
@@ -25,6 +27,7 @@ bool logger::entry::operator ==(const logger::entry& other) const {
 }
 
 logger::entry::operator std::string() const {
+
 	return this -> detail_title() + this -> msg;
 }
 
@@ -36,6 +39,7 @@ const std::string logger::entry::get_timestamp() const {
 }
 
 const std::string logger::entry::detail_title() const {
+
 	return
 		( !logger::use_timestamps ? "" : ( this -> get_timestamp() + " " )) +
 		( !logger::prefix.empty() ? ( logger::prefix + "::" ) : "" ) + this -> name +
@@ -43,6 +47,7 @@ const std::string logger::entry::detail_title() const {
 }
 
 const std::string logger::entry::detail_spacing() const {
+
 	std::string s = this -> detail_title();
 	for ( auto& ch : s )
 		ch = ' ';
@@ -50,6 +55,7 @@ const std::string logger::entry::detail_spacing() const {
 }
 
 std::ostream& logger::operator <<(std::ostream& os, const logger::entry& e) {
+
 	os << e.operator std::string();
         return os;
 }
