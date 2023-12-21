@@ -135,8 +135,6 @@ logger::basic_LOG_LEVEL<Ch, Traits, Sequence>& logger::basic_LOG_LEVEL<Ch, Trait
 
 	if ( !e.msg.empty() && !this -> _padding.empty()) {
 
-		std::cout << "adding padding with " << _padding.width * _padding.count << " spaces" << std::endl;
-
 		std::string new_msg;
 		new_msg += char(001);
 		for ( size_t i = 0; i < this -> _padding.width * this -> _padding.count; i++ )
