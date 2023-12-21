@@ -124,6 +124,14 @@ logger::basic_LOG_LEVEL<Ch, Traits, Sequence>& logger::basic_LOG_LEVEL<Ch, Trait
 		.count = 1
 	};
 
+	if ( e.msg.front() == char(001)) {
+
+		e.msg.erase(0, 1);
+
+		while ( !e.msg.empty() && std::string("\r\v\n\t").find(e.msg.front()) != std::string::npos )
+			e.msg.erase(0, 1);
+	}
+
 	if ( e.name.empty() || e.msg.empty())
 		return *this;
 
