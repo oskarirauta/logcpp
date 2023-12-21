@@ -27,7 +27,8 @@ int main(int argc, char **argv) {
 	logger::info << "info level: dup test" << logger::detail("extension for dup test") << std::endl;
 	logger::info << "info level: dup test" << std::endl;
 
-	logger::info << char(001) << "    entry with padding by spaces" << std::endl;
+	logger::info << logger::padding(10) << logger::padding(4) << "entry with padding" << std::endl;
+	logger::info << logger::padding(10) << logger::padding() << "entry with padding cancelled" << std::endl;
 
 	/*
 	// force clear detailed description on update

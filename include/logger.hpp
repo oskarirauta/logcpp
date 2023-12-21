@@ -12,6 +12,7 @@
 #include "logger/entry.hpp"
 #include "logger/tag.hpp"
 #include "logger/detail.hpp"
+#include "logger/padding.hpp"
 
 namespace logger {
 
@@ -45,6 +46,7 @@ namespace logger {
 			Sequence _buf;
 			std::string _tag;
 			std::string _detail;
+			logger::padding _padding;
 
 			void _reset();
 			void _parse();
@@ -127,6 +129,24 @@ logger::basic_LOG_LEVEL<Ch, Traits, Sequence>& logger::basic_LOG_LEVEL<Ch, Trait
 	if ( e.msg.front() == char(001)) {
 
 		e.msg.erase(0, 1);
+		while ( !e.msg.empty() && std::string("\r\v\n\t ").find(e.msg.front()) != std::string::npos )
+			e.msg.erase(0, 1);
+	}
+
+	if ( !e.msg.empty() && !this -> _padding.empty()) {
+
+		std::cout << "adding padding with " << _padding.width * _padding.count << " spaces" << std::endl;
+
+		std::string new_msg;
+		new_msg += char(001);
+		for ( size_t i = 0; i < this -> _padding.width * this -> _padding.count; i++ )
+			new_msg += ' ';
+		e.msg = new_msg + e.msg;
+	}
+
+	if ( e.msg.front() == char(001)) {
+
+		e.msg.erase(0, 1);
 
 		while ( !e.msg.empty() && std::string("\r\v\n\t").find(e.msg.front()) != std::string::npos )
 			e.msg.erase(0, 1);
@@ -196,6 +216,7 @@ void logger::basic_LOG_LEVEL<Ch, Traits, Sequence>::_reset() {
 	this -> _buf.clear();
 	this -> _tag.clear();
 	this -> _detail.clear();
+	this -> _padding.clear();
 }
 
 template<typename Ch, typename Traits, typename Sequence>
@@ -220,6 +241,56 @@ void logger::basic_LOG_LEVEL<Ch, Traits, Sequence>::_parse() {
 					this -> _tag = common::trim_ws(v);
 				else if ( t == "detail" )
 					this -> _detail = common::trim_ws(v);
+				else if ( t == "padding" ) {
+
+					std::string s = common::trim_ws(v);
+					int c = 0;
+					int w = 0;
+					bool error = false;
+
+					std::erase_if(s, [](char ch) { return std::string("\r\n\t\v ").find(ch) != std::string::npos; });
+
+					if ( auto p_sep = std::find_if(s.begin(), s.end(), [](Ch c) { return c == ','; }); p_sep != s.end()) {
+
+						std::string s_c(s.begin(), p_sep);
+						std::string s_w(p_sep, s.end());
+
+						while ( !s_c.empty() && !std::isdigit(s_c.front()))
+							s_c.erase(0, 1);
+						while ( !s_c.empty() && !std::isdigit(s_c.back()))
+							s_c.pop_back();
+						while ( !s_w.empty() && !std::isdigit(s_w.front()))
+							s_w.erase(0, 1);
+						while ( !s_w.empty() && !std::isdigit(s_w.back()))
+							s_w.pop_back();
+
+						if ( !s_w.empty() && !s_c.empty() && common::is_number(s_c) && common::is_number(s_w)) {
+
+							try {
+								c = std::stoi(s_c);
+							}
+							catch ( const std::invalid_argument& e ) { c = 0; error = true; }
+							catch ( const std::out_of_range& e ) { c = 0; error = true; }
+
+							if ( !error ) {
+
+								try {
+									w = std::stoi(s_w);
+								}
+								catch ( const std::invalid_argument& e ) { c = 0; error = true; }
+								catch ( const std::out_of_range& e ) { c = 0; error = true; }
+							}
+
+							if ( !error ) {
+
+								if ( c == 0 || w == 0 )
+									this -> _padding = logger::padding(0, 0);
+								else
+									this -> _padding = logger::padding((size_t)c, (size_t)w);
+							}
+						}
+					}
+				}
 
 				this -> _buf.erase(begin, end);
 				goto begin_parse;
