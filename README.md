@@ -1,3 +1,8 @@
+# repository archived
+logcpp has been renamed to [logger_cpp](https://github.com/oskarirauta/logger_cpp) and
+logcpp will no longer be maintained. It was kept as it's own repository, because some
+projects are still using it. Please move to [logger_cpp](https://github.com/oskarirauta/logger_cpp) for updated version.
+
 # logcpp
 C++ application internal logging system
 
